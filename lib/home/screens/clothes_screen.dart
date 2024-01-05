@@ -377,15 +377,86 @@ class _ClothingItemDetailsState extends State<ClothingItemDetails> {
       body: Card(
         child: GridTile(
           footer: GridTileBar(
-              title: Container(),
+              title: FutureBuilder(
+                future: ApiService.getAssociatedDrawer(clothingItem.id),
+                builder: (context, drawerSnapshot) {
+                  if (drawerSnapshot.hasData) {
+                    return ListTile(
+                      title: Text(
+                          'Drawer name: ${drawerSnapshot.data!['name']} id:${drawerSnapshot.data!['serial_id']}'),
+                      trailing: IconButton(
+                          icon: Icon(Icons.edit),
+                          onPressed: () {
+                            Navigator.of(context).push(RawDialogRoute(
+                              pageBuilder:
+                                  (context, animation, secondaryAnimation) {
+                                String drawerId = '';
+                                return AlertDialog(
+                                  title: Text('Change drawer'),
+                                  actions: [
+                                    IconButton(
+                                        onPressed: () async {
+                                          ApiService.updateAssociatedDrawer(
+                                                  clothingItem.id, drawerId)
+                                              .then(
+                                            (value) {
+                                              Navigator.of(context).pop();
+                                            },
+                                          );
+                                        },
+                                        icon: Icon(Icons.check_sharp)),
+                                    IconButton(
+                                        onPressed: () {
+                                          Navigator.of(context).pop();
+                                        },
+                                        icon: Icon(Icons.close))
+                                  ],
+                                  content: FutureBuilder(
+                                    future: ApiService.fetchDrawers(),
+                                    builder: (context, snapshot) {
+                                      if (snapshot.hasData) {
+                                        return DropdownMenu(
+                                          initialSelection: drawerSnapshot.data!['serial_id'],
+                                          hintText:'Select a drawer' ,
+                                          dropdownMenuEntries: snapshot.data!
+                                              .map((drawer) =>
+                                                  DropdownMenuEntry(
+                                                    label: drawer['name'],
+                                                    value: drawer['serial_id'],
+                                                  ))
+                                              .toList(),
+                                          onSelected: (value) {
+                                            setState(() {
+                                              drawerId = value!;
+                                            });
+                                          },
+                                        );
+                                      } else {
+                                        return CircularProgressIndicator
+                                            .adaptive();
+                                      }
+                                    },
+                                  ),
+                                );
+                              },
+                            )).then((value) => setState(
+                                  () {},
+                                ));
+                          }),
+                    );
+                  } else {
+                    return CircularProgressIndicator.adaptive();
+                  }
+                },
+              ),
               leading: IconButton(
                 icon: Tooltip(
                   message: 'Open associated drawer',
                   child: const Icon(Icons.density_small),
                 ),
                 onPressed: () async {
-                  int address = await ApiService.getClothingDrawerAddress(
-                      clothingItem.id);
+                  int address = (await ApiService.getAssociatedDrawer(
+                      clothingItem.id))['address'];
                   ApiService.openDrawer(address, 15, 2);
                 },
               ),

@@ -63,6 +63,18 @@ class ApiService {
     return false;
   }
 
+  static Future<void> updateDrawerName(String name, String serialId) async {
+    String jsonString = await ApiService.makeRequest(
+      method: 'POST',
+      url: '${ApiService.serverIp}/smartwardrobeapi/api/drawer/name',
+      payload: {
+        'name': name,
+        'serial_id': serialId,
+      },
+    );
+    Map<String, dynamic> jsonMap = jsonDecode(jsonString);
+  }
+
   static Future<List<Map<String, dynamic>>> fetchDrawers() async {
     String jsonString = await ApiService.makeRequest(
       method: 'GET',
@@ -70,7 +82,10 @@ class ApiService {
     );
     Map<String, dynamic> jsonMap = jsonDecode(jsonString);
     List<dynamic> drawers = jsonMap['data'];
-    return drawers.map((e) => e as Map<String, dynamic>).toList();
+    return drawers
+        .where((element) => element['status'] == 'Connected')
+        .map((e) => e as Map<String, dynamic>)
+        .toList();
   }
 
   static Future<List<ClothingItem>> fetchClothingItems() async {
@@ -210,7 +225,23 @@ class ApiService {
     return body;
   }
 
-  static Future<int> getClothingDrawerAddress(int clothingId) async {
+  static Future<bool> updateAssociatedDrawer(
+      int clothingId, String drawerId) async {
+    String jsonString = await ApiService.makeRequest(
+        method: 'POST',
+        url:
+            '${ApiService.serverIp}/smartwardrobeapi/api/drawer/updateclothing',
+        payload: {
+          'clothing': clothingId,
+          'drawer': drawerId,
+        });
+    var jsonMap = jsonDecode(jsonString);
+
+    return jsonMap['data'];
+  }
+
+  static Future<Map<String, dynamic>> getAssociatedDrawer(
+      int clothingId) async {
     String jsonString = await ApiService.makeRequest(
       method: 'GET',
       url:
@@ -218,7 +249,7 @@ class ApiService {
     );
     var jsonMap = jsonDecode(jsonString);
 
-    return jsonMap['data']['address'];
+    return jsonMap['data'];
   }
 
   static Future<bool> deleteClothingItem(int id) async {

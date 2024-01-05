@@ -35,6 +35,44 @@ class _DrawerScreenState extends State<DrawerScreen> {
                   crossAxisCount: 3),
               children: snapshot.data!
                   .map((drawer) => GridTile(
+                        header: GridTileBar(
+                          title: Text(drawer['name']),
+                          trailing: Tooltip(
+                            message: 'Edit name',
+                            child: IconButton(
+                              icon: const Icon(Icons.edit),
+                              onPressed: () {
+                                Navigator.of(context).push(RawDialogRoute(
+                                  pageBuilder:
+                                      (context, animation, secondaryAnimation) {
+                                    return AlertDialog.adaptive(
+                                      title: const Text('Insert new name'),
+                                      content: TextField(
+                                        controller: TextEditingController(
+                                            text: drawer['name']),
+                                        onSubmitted: (value) {
+                                          ApiService.updateDrawerName(
+                                                  value, drawer['serial_id'])
+                                              .then((value) =>
+                                                  Navigator.of(context).pop());
+                                        },
+                                      ),
+                                      actions: [
+                                        IconButton(
+                                            onPressed: () {
+                                              Navigator.of(context).pop();
+                                            },
+                                            icon: const Icon(Icons.close))
+                                      ],
+                                    );
+                                  },
+                                )).then((value) => setState(
+                                      () {},
+                                    ));
+                              },
+                            ),
+                          ),
+                        ),
                         footer: Card(
                           child: GridTileBar(
                             backgroundColor: Theme.of(context)
@@ -54,28 +92,10 @@ class _DrawerScreenState extends State<DrawerScreen> {
                                   child: IconButton(
                                     icon: const Icon(Icons.open_in_full),
                                     onPressed: () async {
-                                      Map<String, dynamic> requestBody = {
-                                        "address": drawer['address'],
-                                        "operation": "SetSpeed",
-                                        "parameters": [
-                                          [
-                                            drawer['speed'] ?? 10,
-                                          ],
-                                        ],
-                                      };
-                                      await ApiService.sendOperation(
-                                          requestBody);
-                                      requestBody = {
-                                        "address": drawer['address'],
-                                        "operation": "OpenDrawer",
-                                        "parameters": [
-                                          [
-                                            drawer['number_of_turns'] ?? 1,
-                                          ],
-                                        ],
-                                      };
-                                      await ApiService.sendOperation(
-                                          requestBody);
+                                      await ApiService.openDrawer(
+                                          drawer['address'],
+                                          drawer['speed'] ?? 10,
+                                          drawer['number_of_turns'] ?? 2);
                                     },
                                   ),
                                 ),
@@ -84,29 +104,10 @@ class _DrawerScreenState extends State<DrawerScreen> {
                                   child: IconButton(
                                       icon: const Icon(Icons.close),
                                       onPressed: () async {
-                                        Map<String, dynamic> requestBody = {
-                                          "address": drawer['address'],
-                                          "operation": "SetSpeed",
-                                          "parameters": [
-                                            [
-                                              drawer['speed'] ?? 10,
-                                            ],
-                                          ],
-                                        };
-                                        await ApiService.sendOperation(
-                                            requestBody);
-                                        requestBody = {
-                                          "address": drawer['address'],
-                                          "operation": "CloseDrawer",
-                                          "parameters": [
-                                            [
-                                              drawer['number_of_turns'] ?? 1,
-                                            ],
-                                          ],
-                                        };
-
-                                        await ApiService.sendOperation(
-                                            requestBody);
+                                        await ApiService.closeDrawer(
+                                            drawer['address'],
+                                            drawer['speed'] ?? 10,
+                                            drawer['number_of_turns'] ?? 2);
                                       }),
                                 ),
                                 Tooltip(
@@ -223,6 +224,7 @@ class _DrawerSelectionScreenState extends State<DrawerSelectionScreen> {
                           );
                         },
                         child: GridTile(
+                          header: Text(drawer['name']),
                           child: Icon(Icons.density_medium),
                           footer: GridTileBar(
                               title: Text('${drawer['serial_id']}')),
