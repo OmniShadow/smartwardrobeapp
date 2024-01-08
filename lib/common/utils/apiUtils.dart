@@ -214,48 +214,42 @@ class ApiService {
     return body;
   }
 
-  static Future<void> openDrawer(int address, int speed, int turns) async {
+  static Future<void> openDrawer(
+      int address, int speed, int numberOfRevolutions) async {
     Map<String, dynamic> requestBody = {
       "address": address,
       "operation": "SetSpeed",
-      "parameters": [
-        [
-          speed,
-        ],
-      ],
+      "parameters": {
+        "speed": speed,
+      }
     };
     await ApiService.sendOperation(requestBody);
     requestBody = {
       "address": address,
       "operation": "OpenDrawer",
-      "parameters": [
-        [
-          turns,
-        ],
-      ],
+      "parameters": {
+        "numberOfRevolutions": numberOfRevolutions,
+      }
     };
     await ApiService.sendOperation(requestBody);
   }
 
-  static Future<void> closeDrawer(int address, int speed, int turns) async {
+  static Future<void> closeDrawer(
+      int address, int speed, int numberOfRevolutions) async {
     Map<String, dynamic> requestBody = {
       "address": address,
       "operation": "SetSpeed",
-      "parameters": [
-        [
-          speed,
-        ],
-      ],
+      "parameters": {
+        "speed": speed,
+      }
     };
     await ApiService.sendOperation(requestBody);
     requestBody = {
       "address": address,
       "operation": "CloseDrawer",
-      "parameters": [
-        [
-          turns,
-        ],
-      ],
+      "parameters": {
+        "numberOfRevolutions": numberOfRevolutions,
+      }
     };
     await ApiService.sendOperation(requestBody);
   }
