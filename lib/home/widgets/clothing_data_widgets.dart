@@ -54,27 +54,25 @@ class ClothingItemGridTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       child: GridTile(
-        footer: Card(
-          child: GridTileBar(
-            backgroundColor: Theme.of(context).colorScheme.secondary,
-            title: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Text(
-                clothingItem.name,
-                style: TextStyle(
-                    fontSize: 16.0,
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.onSecondary),
-              ),
+        footer: GridTileBar(
+          backgroundColor: Theme.of(context).colorScheme.secondary,
+          title: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Text(
+              clothingItem.name,
+              style: TextStyle(
+                  fontSize: 16.0,
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.onSecondary),
             ),
-            subtitle: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8.0),
-              child: Text(
-                clothingItem.category,
-                style: TextStyle(
-                    fontSize: 14.0,
-                    color: Theme.of(context).colorScheme.onSecondaryContainer),
-              ),
+          ),
+          subtitle: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            child: Text(
+              clothingItem.category,
+              style: TextStyle(
+                  fontSize: 14.0,
+                  color: Theme.of(context).colorScheme.onSecondaryContainer),
             ),
           ),
         ),

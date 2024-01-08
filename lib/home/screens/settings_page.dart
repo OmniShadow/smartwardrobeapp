@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:wardrobe/common/utils/apiUtils.dart';
 import 'package:app_settings/app_settings.dart';
@@ -24,8 +25,8 @@ class _SettingsPageState extends State<SettingsPage> {
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(
-          horizontal: 100,
-          vertical: 50,
+          horizontal: 10,
+          vertical: 10,
         ),
         child: Column(children: [
           MaterialButton(
@@ -63,38 +64,32 @@ class _SettingsPageState extends State<SettingsPage> {
               builder: (context, snapshot) {
                 if (snapshot.hasData) {
                   return snapshot.data!
-                      ? Row(
-                          children: [
-                            const Icon(
-                              Icons.check,
-                              color: Colors.greenAccent,
-                            ),
-                            Text(
-                              'Connected',
-                              style: Theme.of(context).textTheme.labelLarge,
-                            ),
-                          ],
+                      ? ListTile(
+                          leading: const Icon(
+                            Icons.check,
+                            color: Colors.greenAccent,
+                          ),
+                          title: Text(
+                            'Connected',
+                            style: Theme.of(context).textTheme.labelLarge,
+                          ),
                         )
-                      : Row(
-                          children: [
-                            const Icon(
-                              Icons.close,
-                              color: Colors.redAccent,
-                            ),
-                            Text(
-                              'Ip not valid',
-                              style: Theme.of(context).textTheme.labelLarge,
-                            ),
-                          ],
+                      : ListTile(
+                          leading: const Icon(
+                            Icons.close,
+                            color: Colors.redAccent,
+                          ),
+                          title: Text(
+                            'Ip not valid',
+                            style: Theme.of(context).textTheme.labelLarge,
+                          ),
                         );
                 } else {
-                  return Wrap(children: [
-                    Text(
-                      'Checking ip',
-                      style: Theme.of(context).textTheme.labelLarge,
-                    ),
-                    const RefreshProgressIndicator()
-                  ]);
+                  return ListTile(
+                      title: AutoSizeText(
+                        'Checking ip',
+                      ),
+                      leading: const CircularProgressIndicator.adaptive());
                 }
               },
             ),
@@ -150,38 +145,33 @@ class _SettingsPageState extends State<SettingsPage> {
               builder: (context, snapshot) {
                 if (snapshot.hasData) {
                   return snapshot.data != ""
-                      ? Row(
-                          children: [
-                            const Icon(
-                              Icons.check,
-                              color: Colors.greenAccent,
-                            ),
-                            Text(
-                              'Connected',
-                              style: Theme.of(context).textTheme.labelLarge,
-                            ),
-                          ],
+                      ? ListTile(
+                          leading: const Icon(
+                            Icons.check,
+                            color: Colors.greenAccent,
+                          ),
+                          title: Text(
+                            'Connected',
+                            style: Theme.of(context).textTheme.labelLarge,
+                          ),
                         )
-                      : Row(
-                          children: [
-                            const Icon(
-                              Icons.close,
-                              color: Colors.redAccent,
-                            ),
-                            Text(
-                              'Ip not valid',
-                              style: Theme.of(context).textTheme.labelLarge,
-                            ),
-                          ],
+                      : ListTile(
+                          leading: const Icon(
+                            Icons.close,
+                            color: Colors.redAccent,
+                          ),
+                          title: Text(
+                            'Ip not valid',
+                            style: Theme.of(context).textTheme.labelLarge,
+                          ),
                         );
                 } else {
-                  return Row(children: [
-                    const RefreshProgressIndicator(),
-                    Text(
+                  return const ListTile(
+                    leading: CircularProgressIndicator.adaptive(),
+                    title: AutoSizeText(
                       'Checking ip',
-                      style: Theme.of(context).textTheme.labelLarge,
                     ),
-                  ]);
+                  );
                 }
               },
             ),

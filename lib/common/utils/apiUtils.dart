@@ -103,6 +103,58 @@ class ApiService {
     return clothingItems;
   }
 
+  static Future<Map<String, dynamic>> getOutfitSchema() async {
+    String jsonString = await ApiService.makeRequest(
+      method: "GET",
+      url: '${ApiService.serverIp}/smartwardrobeapi/api/outfit/schema',
+    );
+    Map<String, dynamic> jsonMap = json.decode(jsonString);
+    return jsonMap['data'];
+  }
+
+  static Future<List<Map<String, dynamic>>> fetchOutfits() async {
+    String jsonString = await ApiService.makeRequest(
+      method: "GET",
+      url: '${ApiService.serverIp}/smartwardrobeapi/api/outfit/list',
+    );
+    Map<String, dynamic> jsonMap = json.decode(jsonString);
+    List<Map<String, dynamic>> outfits = jsonMap['data'];
+
+    return outfits;
+  }
+
+  static Future<bool> insertOutfit(Map<String, dynamic> payload) async {
+    String jsonString = await ApiService.makeRequest(
+      method: 'POST',
+      url: '${ApiService.serverIp}/smartwardrobeapi/api/outfit/add',
+      payload: payload,
+    );
+    var jsonMap = jsonDecode(jsonString);
+    return jsonMap['data'];
+  }
+
+  static Future<bool> deleteOutfit(int id) async {
+    String jsonString = await ApiService.makeRequest(
+      method: 'POST',
+      url: '${ApiService.serverIp}/smartwardrobeapi/api/outfit/$id/delete',
+      payload: {'id': id},
+    );
+    var jsonMap = jsonDecode(jsonString);
+    return jsonMap['data'];
+  }
+
+  static Future<String> generateOutfitImage(Map<String, dynamic> outfit) async {
+    Object payload = {};
+    String prompt = '';
+    String jsonString = await ApiService.makeRequest(
+      method: 'POST',
+      url: '${ApiService.serverIp}/smartwardrobeapi/api/imagegen/generate',
+      payload: {},
+    );
+    var jsonMap = jsonDecode(jsonString);
+    return jsonMap['data'];
+  }
+
   static Future<bool> insertClothingIntoDrawer(
       int item, String drawerId) async {
     try {

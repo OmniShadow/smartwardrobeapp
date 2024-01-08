@@ -1,10 +1,12 @@
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:wardrobe/home/screens/clothes_screen.dart';
 import 'package:wardrobe/home/screens/drawer_screen.dart';
+import 'package:wardrobe/home/screens/outfits_screen.dart';
 import 'package:wardrobe/home/screens/settings_page.dart';
 
 class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -17,16 +19,10 @@ class HomeScreen extends StatelessWidget {
           style: Theme.of(context).textTheme.titleLarge,
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 100, vertical: 50),
-        child: GridView(
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            childAspectRatio: 1,
-            mainAxisSpacing: 20,
-            crossAxisSpacing: 20,
-          ),
-          children: const [
+      body: const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        child: ResponsiveGridView(
+          children: [
             HomeScreenTile(
               icon: Icons.checkroom,
               title: 'Clothes',
@@ -35,7 +31,7 @@ class HomeScreen extends StatelessWidget {
             HomeScreenTile(
               icon: Icons.room_preferences,
               title: 'Outfits',
-              page: ClothingListPage(),
+              page: OutfitListPage(),
             ),
             HomeScreenTile(
               icon: Icons.density_small_outlined,
@@ -58,26 +54,25 @@ class HomeScreenTile extends StatelessWidget {
   final IconData icon;
   final String title;
   final Widget page;
+
   const HomeScreenTile({
-    super.key,
+    Key? key,
     required this.icon,
     required this.title,
     required this.page,
-  });
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return GridTile(
       footer: GridTileBar(
         title: Center(
-          child: Text(
+          child: AutoSizeText(
             title,
-            style: Theme.of(context).textTheme.headlineMedium,
           ),
         ),
       ),
       child: InkWell(
-        onHover: (value) {},
         onTap: () {
           Navigator.of(context).push(MaterialPageRoute(
             builder: (context) {
@@ -88,22 +83,58 @@ class HomeScreenTile extends StatelessWidget {
         child: Card(
           shape: const RoundedRectangleBorder(
             borderRadius: BorderRadiusDirectional.only(
-              topStart: Radius.circular(100),
-              bottomEnd: Radius.circular(100),
+              topStart: Radius.circular(50),
+              bottomEnd: Radius.circular(50),
               topEnd: Radius.circular(10),
               bottomStart: Radius.circular(10),
             ),
           ),
           color: Theme.of(context).colorScheme.primaryContainer.withAlpha(200),
-          child: Center(
-            child: Icon(
-              icon,
-              size: 200,
-              color: Theme.of(context).colorScheme.onBackground,
-            ),
+          child: LayoutBuilder(
+            builder: (context,constraint) {
+              return Center(
+                child: Icon(
+                  icon,
+                  color: Theme.of(context).colorScheme.onBackground,
+                  size: constraint.maxHeight/3,
+                ),
+              );
+            }
           ),
         ),
       ),
+    );
+  }
+}
+
+class ResponsiveGridView extends StatelessWidget {
+  final List<Widget> children;
+
+  const ResponsiveGridView({Key? key, required this.children}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+
+    int crossAxisCount = 2;
+    if (width > 600) {
+      crossAxisCount = 3;
+    }
+    if (width > 900) {
+      crossAxisCount = 4;
+    }
+
+    return GridView.builder(
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: crossAxisCount,
+        childAspectRatio: 1,
+        mainAxisSpacing: 20,
+        crossAxisSpacing: 20,
+      ),
+      itemCount: children.length,
+      itemBuilder: (context, index) {
+        return children[index];
+      },
     );
   }
 }

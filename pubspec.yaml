@@ -44,6 +44,8 @@ dependencies:
   dropdown_textfield: ^1.0.8
   app_settings: ^5.1.1
   url_launcher: ^6.2.2
+  auto_size_text: ^3.0.0
+  dotted_border: ^2.1.0
 
 dev_dependencies:
   flutter_test:
