@@ -85,6 +85,7 @@ Map<String, List<String>> clothingMapHints = {
     "Slippers"
   ],
   "size": [
+    "XXS",
     "XS",
     "S",
     "M",
@@ -92,6 +93,40 @@ Map<String, List<String>> clothingMapHints = {
     "XL",
     "XXL",
     "XXXL",
+    "0",
+    "2-4",
+    "6-8",
+    "10-12",
+    "14-16",
+    "18-20",
+    "22-24",
+    "26-28",
+    "30-32",
+    "34-36",
+    "38-40",
+    "42-44",
+    "46-48",
+    "50-52",
+    "54-56",
+    "58-60",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7",
+    "8",
+    "9",
+    "10",
+    "11",
+    "35-36",
+    "37",
+    "38",
+    "39-40",
+    "41",
+    "42-43",
+    "44"
   ],
   "material": [
     "Cotton",
@@ -175,6 +210,21 @@ class _ClothingListPageState extends State<ClothingListPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      bottomNavigationBar: BottomNavigationBar(
+        onTap: (value) {
+          Navigator.of(context).popUntil((route) => route.isFirst);
+        },
+        items: const [
+          BottomNavigationBarItem(
+            label: 'back',
+            icon: Icon(Icons.navigate_before),
+          ),
+          BottomNavigationBarItem(
+            label: 'Home',
+            icon: Icon(Icons.home_filled),
+          ),
+        ],
+      ),
       appBar: AppBar(
         actions: [
           MaterialButton(
@@ -354,9 +404,7 @@ class _ClothingListPageState extends State<ClothingListPage> {
             Navigator.of(context).push(RawDialogRoute(
               pageBuilder: (context, animation, secondaryAnimation) {
                 {
-                  return const Dialog(
-                    child: AddClothingItemPage(),
-                  );
+                  return AddClothingItemPage();
                 }
               },
             )).then(
@@ -391,167 +439,168 @@ class _ClothingItemDetailsState extends State<ClothingItemDetails> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      bottomNavigationBar: SafeArea(
+        child: GridTileBar(
+            backgroundColor: Theme.of(context).colorScheme.tertiaryContainer,
+            title: FutureBuilder(
+              future: ApiService.getAssociatedDrawer(clothingItem.id),
+              builder: (context, drawerSnapshot) {
+                if (drawerSnapshot.hasData) {
+                  return ListTile(
+                    title: AutoSizeText(
+                      'Drawer name: ${drawerSnapshot.data!['name']} id:${drawerSnapshot.data!['serial_id']}',
+                      style: TextStyle(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onTertiaryContainer),
+                    ),
+                    trailing: IconButton(
+                        icon: const Icon(Icons.edit),
+                        onPressed: () {
+                          Navigator.of(context).push(RawDialogRoute(
+                            pageBuilder:
+                                (context, animation, secondaryAnimation) {
+                              String drawerId = '';
+                              return AlertDialog(
+                                title: const Text('Change drawer'),
+                                actions: [
+                                  IconButton(
+                                      onPressed: () async {
+                                        ApiService.updateAssociatedDrawer(
+                                                clothingItem.id, drawerId)
+                                            .then(
+                                          (value) {
+                                            Navigator.of(context).pop();
+                                          },
+                                        );
+                                      },
+                                      icon: const Icon(Icons.check_sharp)),
+                                  IconButton(
+                                      onPressed: () {
+                                        Navigator.of(context).pop();
+                                      },
+                                      icon: const Icon(Icons.close))
+                                ],
+                                content: FutureBuilder(
+                                  future: ApiService.fetchDrawers(),
+                                  builder: (context, snapshot) {
+                                    if (snapshot.hasData) {
+                                      return DropdownMenu(
+                                        initialSelection:
+                                            drawerSnapshot.data!['serial_id'],
+                                        hintText: 'Select a drawer',
+                                        dropdownMenuEntries: snapshot.data!
+                                            .map((drawer) => DropdownMenuEntry(
+                                                  label: drawer['name'],
+                                                  value: drawer['serial_id'],
+                                                ))
+                                            .toList(),
+                                        onSelected: (value) {
+                                          setState(() {
+                                            drawerId = value!;
+                                          });
+                                        },
+                                      );
+                                    } else {
+                                      return const CircularProgressIndicator
+                                          .adaptive();
+                                    }
+                                  },
+                                ),
+                              );
+                            },
+                          )).then((value) => setState(
+                                () {},
+                              ));
+                        }),
+                  );
+                } else {
+                  return const CircularProgressIndicator.adaptive();
+                }
+              },
+            ),
+            leading: IconButton(
+              icon: const Tooltip(
+                message: 'Open associated drawer',
+                child: Icon(Icons.density_small),
+              ),
+              onPressed: () async {
+                int address = (await ApiService.getAssociatedDrawer(
+                    clothingItem.id))['address'];
+                ApiService.openDrawer(address, 15, 2);
+              },
+            ),
+            trailing: IconButton(
+              onPressed: () {
+                late Future<bool> response;
+                Navigator.of(context).push(
+                  RawDialogRoute(
+                    pageBuilder: (context, animation, secondaryAnimation) {
+                      {
+                        return AlertDialog(
+                          title: const Text("Delete item"),
+                          actions: [
+                            MaterialButton(
+                              onPressed: () {
+                                response = ApiService.deleteClothingItem(
+                                    clothingItem.id);
+                                Navigator.of(context).pop();
+                              },
+                              child: const Text("Yes"),
+                            ),
+                            MaterialButton(
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                              },
+                              child: const Text("Cancel"),
+                            ),
+                          ],
+                        );
+                      }
+                    },
+                  ),
+                ).then(
+                  (value) {
+                    ScaffoldMessenger.of(context)
+                        .showSnackBar(
+                          SnackBar(
+                            duration: const Duration(seconds: 2),
+                            content: FutureBuilder(
+                              future: response,
+                              builder: (context, snapshot) {
+                                if (snapshot.connectionState ==
+                                    ConnectionState.waiting) {
+                                  return const Row(
+                                    children: [
+                                      Text("Submitting request"),
+                                      CircularProgressIndicator()
+                                    ],
+                                  );
+                                } else {
+                                  return Text(
+                                    snapshot.data!
+                                        ? "Item deleted"
+                                        : "Error: item not deleted",
+                                  );
+                                }
+                              },
+                            ),
+                          ),
+                        )
+                        .closed
+                        .then((value) => Navigator.of(context).pop());
+                  },
+                );
+              },
+              icon: const Icon(Icons.delete),
+            )),
+      ),
       appBar: AppBar(
         title: Text(clothingItem.name),
         titleTextStyle: Theme.of(context).textTheme.headlineSmall,
       ),
       body: Card(
         child: GridTile(
-          footer: GridTileBar(
-              backgroundColor: Theme.of(context).colorScheme.tertiaryContainer,
-              title: FutureBuilder(
-                future: ApiService.getAssociatedDrawer(clothingItem.id),
-                builder: (context, drawerSnapshot) {
-                  if (drawerSnapshot.hasData) {
-                    return ListTile(
-                      title: AutoSizeText(
-                        'Drawer name: ${drawerSnapshot.data!['name']} id:${drawerSnapshot.data!['serial_id']}',
-                        style: TextStyle(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onTertiaryContainer),
-                      ),
-                      trailing: IconButton(
-                          icon: const Icon(Icons.edit),
-                          onPressed: () {
-                            Navigator.of(context).push(RawDialogRoute(
-                              pageBuilder:
-                                  (context, animation, secondaryAnimation) {
-                                String drawerId = '';
-                                return AlertDialog(
-                                  title: const Text('Change drawer'),
-                                  actions: [
-                                    IconButton(
-                                        onPressed: () async {
-                                          ApiService.updateAssociatedDrawer(
-                                                  clothingItem.id, drawerId)
-                                              .then(
-                                            (value) {
-                                              Navigator.of(context).pop();
-                                            },
-                                          );
-                                        },
-                                        icon: const Icon(Icons.check_sharp)),
-                                    IconButton(
-                                        onPressed: () {
-                                          Navigator.of(context).pop();
-                                        },
-                                        icon: const Icon(Icons.close))
-                                  ],
-                                  content: FutureBuilder(
-                                    future: ApiService.fetchDrawers(),
-                                    builder: (context, snapshot) {
-                                      if (snapshot.hasData) {
-                                        return DropdownMenu(
-                                          initialSelection:
-                                              drawerSnapshot.data!['serial_id'],
-                                          hintText: 'Select a drawer',
-                                          dropdownMenuEntries: snapshot.data!
-                                              .map((drawer) =>
-                                                  DropdownMenuEntry(
-                                                    label: drawer['name'],
-                                                    value: drawer['serial_id'],
-                                                  ))
-                                              .toList(),
-                                          onSelected: (value) {
-                                            setState(() {
-                                              drawerId = value!;
-                                            });
-                                          },
-                                        );
-                                      } else {
-                                        return const CircularProgressIndicator
-                                            .adaptive();
-                                      }
-                                    },
-                                  ),
-                                );
-                              },
-                            )).then((value) => setState(
-                                  () {},
-                                ));
-                          }),
-                    );
-                  } else {
-                    return const CircularProgressIndicator.adaptive();
-                  }
-                },
-              ),
-              leading: IconButton(
-                icon: const Tooltip(
-                  message: 'Open associated drawer',
-                  child: Icon(Icons.density_small),
-                ),
-                onPressed: () async {
-                  int address = (await ApiService.getAssociatedDrawer(
-                      clothingItem.id))['address'];
-                  ApiService.openDrawer(address, 15, 2);
-                },
-              ),
-              trailing: IconButton(
-                onPressed: () {
-                  late Future<bool> response;
-                  Navigator.of(context).push(
-                    RawDialogRoute(
-                      pageBuilder: (context, animation, secondaryAnimation) {
-                        {
-                          return AlertDialog(
-                            title: const Text("Delete item"),
-                            actions: [
-                              MaterialButton(
-                                onPressed: () {
-                                  response = ApiService.deleteClothingItem(
-                                      clothingItem.id);
-                                  Navigator.of(context).pop();
-                                },
-                                child: const Text("Yes"),
-                              ),
-                              MaterialButton(
-                                onPressed: () {
-                                  Navigator.of(context).pop();
-                                },
-                                child: const Text("Cancel"),
-                              ),
-                            ],
-                          );
-                        }
-                      },
-                    ),
-                  ).then(
-                    (value) {
-                      ScaffoldMessenger.of(context)
-                          .showSnackBar(
-                            SnackBar(
-                              duration: const Duration(seconds: 2),
-                              content: FutureBuilder(
-                                future: response,
-                                builder: (context, snapshot) {
-                                  if (snapshot.connectionState ==
-                                      ConnectionState.waiting) {
-                                    return const Row(
-                                      children: [
-                                        Text("Submitting request"),
-                                        CircularProgressIndicator()
-                                      ],
-                                    );
-                                  } else {
-                                    return Text(
-                                      snapshot.data!
-                                          ? "Item deleted"
-                                          : "Error: item not deleted",
-                                    );
-                                  }
-                                },
-                              ),
-                            ),
-                          )
-                          .closed
-                          .then((value) => Navigator.of(context).pop());
-                    },
-                  );
-                },
-                icon: const Icon(Icons.delete),
-              )),
           child: OrientationBuilder(builder: (context, orientation) {
             if (orientation == Orientation.landscape) {
               return Row(
@@ -790,6 +839,10 @@ class _AddClothingItemPageState extends State<AddClothingItemPage> {
                   clothingMap[key] = (selectedValue).value;
                 },
                 validator: (input) {
+                  if (key == 'brand' || key == 'description') {
+                    clothingMap[key] = input;
+                    return null;
+                  }
                   if (input == null || input.isEmpty) {
                     return 'Please enter a $key';
                   }
@@ -810,6 +863,10 @@ class _AddClothingItemPageState extends State<AddClothingItemPage> {
                 controller: TextEditingController(text: value),
                 decoration: InputDecoration(labelText: key),
                 validator: (input) {
+                  if (key == 'brand' || key == 'description') {
+                    clothingMap[key] = input;
+                    return null;
+                  }
                   if (input == null || input.isEmpty) {
                     return 'Please enter a $key';
                   }
@@ -827,8 +884,12 @@ class _AddClothingItemPageState extends State<AddClothingItemPage> {
   void _buildFeatureChips() {
     featureChips = (clothingMap["features"] as List<dynamic>)
         .map((e) => Chip(
-              label: Text(e),
-              backgroundColor: Colors.amber,
+              label: Text(
+                e,
+                style:
+                    TextStyle(color: Theme.of(context).colorScheme.onSecondary),
+              ),
+              backgroundColor: Theme.of(context).colorScheme.secondary,
               onDeleted: () {
                 setState(() {
                   (clothingMap["features"] as List<dynamic>).remove(e);
@@ -893,7 +954,8 @@ class _AddClothingItemPageState extends State<AddClothingItemPage> {
                               builder: (context, snapshot) {
                                 if (snapshot.hasData) {
                                   clothingMap.addAll(snapshot.data!);
-                                  Future.delayed(const Duration(seconds: 1)).then(
+                                  Future.delayed(const Duration(seconds: 1))
+                                      .then(
                                     (value) {
                                       ScaffoldMessenger.of(context)
                                           .hideCurrentSnackBar();
@@ -925,18 +987,18 @@ class _AddClothingItemPageState extends State<AddClothingItemPage> {
                           .closed
                           .then((value) => setState(() {
                                 _buildTextFormFields();
+                                _buildFeatureChips();
                               }));
-
                     },
                   ),
                 ),
                 Expanded(
                   child: MaterialButton(
                     child: const AutoSizeText('Pick another'),
-                    onPressed: () async {
-                      capturedImage = await ImageUtils.imageToBase64(
-                          (await ImageUtils.captureImage(ImageSource.camera))!);
-                      setState(() {});
+                    onPressed: () {
+                      setState(() {
+                        capturedImage = null;
+                      });
                     },
                   ),
                 ),
@@ -995,6 +1057,100 @@ class _AddClothingItemPageState extends State<AddClothingItemPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      bottomNavigationBar: SafeArea(
+        child: ListTile(
+          tileColor: Theme.of(context).colorScheme.tertiaryContainer,
+          leading: MaterialButton(
+            onPressed: () {
+              if (_formKey.currentState!.validate()) {
+                Map<String, dynamic> data =
+                    Map<String, dynamic>.from(clothingMap);
+                data['image'] = capturedImage;
+                data['color'] = clothingMap['color'];
+
+                Future<int> response = ApiService.submitClothingItem(data);
+                int itemId = -1;
+                ScaffoldMessenger.of(context)
+                    .showSnackBar(
+                      SnackBar(
+                        content: FutureBuilder(
+                          future: response,
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              return const Row(
+                                children: [
+                                  Text("Submitting data"),
+                                  CircularProgressIndicator()
+                                ],
+                              );
+                            } else {
+                              itemId = snapshot.data!;
+                              print(itemId);
+                              return Text(
+                                snapshot.data != null
+                                    ? "Item inserted"
+                                    : "Error: item not inserted",
+                              );
+                            }
+                          },
+                        ),
+                      ),
+                    )
+                    .closed
+                    .then((value) {
+                  Navigator.of(context).push(RawDialogRoute(
+                    pageBuilder: (context, animation, secondaryAnimation) {
+                      {
+                        return AlertDialog(
+                          title: const Text('Insert into drawer?'),
+                          actions: [
+                            MaterialButton(
+                              onPressed: () {
+                                Navigator.of(context).push(RawDialogRoute(
+                                  pageBuilder:
+                                      (context, animation, secondaryAnimation) {
+                                    {
+                                      print(itemId);
+                                      return Dialog(
+                                        child: DrawerSelectionScreen(
+                                          clothingItem: itemId,
+                                        ),
+                                      );
+                                    }
+                                  },
+                                )).then(
+                                  (value) {
+                                    Navigator.of(context).pop();
+                                  },
+                                );
+                              },
+                              child: const Text('Yes'),
+                            ),
+                            MaterialButton(
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                              },
+                              child: const Text('No'),
+                            ),
+                          ],
+                        );
+                      }
+                    },
+                  )).then((value) => Navigator.of(context).pop());
+                });
+              }
+            },
+            child: const Text('Submit'),
+          ),
+          trailing: MaterialButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: const Text('cancel'),
+          ),
+        ),
+      ),
       appBar: AppBar(
         centerTitle: true,
         title: Text("Insert clothing data"),
@@ -1002,141 +1158,41 @@ class _AddClothingItemPageState extends State<AddClothingItemPage> {
       ),
       body: Form(
         key: _formKey,
-        child: Column(
-          children: [
-            Expanded(
-              flex: 10,
-              child: OrientationBuilder(builder: (context, orientation) {
-                if (orientation == Orientation.landscape) {
-                  return Row(
-                    children: [
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.only(right: 8.0),
-                          child: _buildImagePicker(),
-                        ),
-                      ),
-                      Expanded(
-                        child: ListView(children: _buildInputFields()),
-                      ),
-                    ],
-                  );
-                } else {
-                  return Column(
-                    children: [
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.only(right: 8.0),
-                          child: _buildImagePicker(),
-                        ),
-                      ),
-                      Expanded(
-                        child: ListView(children: _buildInputFields()),
-                      ),
-                    ],
-                  );
-                }
-              }),
-            ),
-            Expanded(
-              flex: 1,
-              child: ListTile(
-                tileColor: Theme.of(context).colorScheme.tertiaryContainer,
-                leading: MaterialButton(
-                  onPressed: () {
-                    if (_formKey.currentState!.validate()) {
-                      Map<String, dynamic> data =
-                          Map<String, dynamic>.from(clothingMap);
-                      data['image'] = capturedImage;
-                      data['color'] = clothingMap['color'];
-
-                      Future<int> response =
-                          ApiService.submitClothingItem(data);
-                      int itemId = -1;
-                      ScaffoldMessenger.of(context)
-                          .showSnackBar(
-                            SnackBar(
-                              content: FutureBuilder(
-                                future: response,
-                                builder: (context, snapshot) {
-                                  if (snapshot.connectionState ==
-                                      ConnectionState.waiting) {
-                                    return const Row(
-                                      children: [
-                                        Text("Submitting data"),
-                                        CircularProgressIndicator()
-                                      ],
-                                    );
-                                  } else {
-                                    itemId = snapshot.data!;
-                                    print(itemId);
-                                    return Text(
-                                      snapshot.data != null
-                                          ? "Item inserted"
-                                          : "Error: item not inserted",
-                                    );
-                                  }
-                                },
-                              ),
-                            ),
-                          )
-                          .closed
-                          .then((value) {
-                        Navigator.of(context).push(RawDialogRoute(
-                          pageBuilder:
-                              (context, animation, secondaryAnimation) {
-                            {
-                              return AlertDialog(
-                                title: const Text('Insert into drawer?'),
-                                actions: [
-                                  MaterialButton(
-                                    onPressed: () {
-                                      Navigator.of(context).push(RawDialogRoute(
-                                        pageBuilder: (context, animation,
-                                            secondaryAnimation) {
-                                          {
-                                            print(itemId);
-                                            return Dialog(
-                                              child: DrawerSelectionScreen(
-                                                clothingItem: itemId,
-                                              ),
-                                            );
-                                          }
-                                        },
-                                      )).then(
-                                        (value) {
-                                          Navigator.of(context).pop();
-                                        },
-                                      );
-                                    },
-                                    child: const Text('Yes'),
-                                  ),
-                                  MaterialButton(
-                                    onPressed: () {
-                                      Navigator.of(context).pop();
-                                    },
-                                    child: const Text('No'),
-                                  ),
-                                ],
-                              );
-                            }
-                          },
-                        )).then((value) => Navigator.of(context).pop());
-                      });
-                    }
-                  },
-                  child: const Text('Submit'),
+        child: OrientationBuilder(builder: (context, orientation) {
+          if (orientation == Orientation.landscape) {
+            return Row(
+              children: [
+                Expanded(
+                  flex: 1,
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 8.0),
+                    child: _buildImagePicker(),
+                  ),
                 ),
-                trailing: MaterialButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                  child: const Text('cancel'),
+                Expanded(
+                  flex: 2,
+                  child: ListView(children: _buildInputFields()),
                 ),
-              ),
-            ),
-          ],
-        ),
+              ],
+            );
+          } else {
+            return Column(
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 8.0),
+                    child: _buildImagePicker(),
+                  ),
+                ),
+                Expanded(
+                  flex: 3,
+                  child: ListView(children: _buildInputFields()),
+                ),
+              ],
+            );
+          }
+        }),
       ),
     );
   }

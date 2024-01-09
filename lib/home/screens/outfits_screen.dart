@@ -1,13 +1,11 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
-import 'package:flex_color_picker/flex_color_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:wardrobe/common/utils/apiUtils.dart';
 import 'package:wardrobe/common/utils/imageUtils.dart';
 
 import 'package:wardrobe/home/models/clothing_data.dart';
-import 'package:wardrobe/home/screens/drawer_screen.dart';
 import 'package:wardrobe/home/screens/home_screen.dart';
 import 'package:wardrobe/home/widgets/clothing_data_widgets.dart';
 
@@ -17,14 +15,59 @@ import 'package:auto_size_text/auto_size_text.dart';
 import 'package:dotted_border/dotted_border.dart';
 
 Map<String, dynamic> outfitSchema = {};
+String? capturedImage;
 Map<String, List<String>> outfitMapHints = {
-  "occasion": [],
-  "style": [],
-  "weather": [],
-  "season": ["Any", "Spring", "Summer", "Fall", "Winter"],
+  "occasion": [
+    "Casual",
+    "Formal",
+    "Business Casual",
+    "Party",
+    "Outdoor",
+    "Wedding",
+    "Date Night",
+    "Vacation",
+    "Workout",
+    "Cocktail",
+    "Interview",
+    "Beach Day",
+    "BBQ",
+    "Concert",
+    "Picnic",
+    "Hiking",
+    "Brunch",
+    "Shopping Spree",
+    "Club Night",
+    "Holiday Celebration"
+  ],
+  "style": [
+    "Classic",
+    "Bohemian",
+    "Sporty",
+    "Chic",
+    "Vintage",
+    "Preppy",
+    "Gothic",
+    "Casual Streetwear",
+    "Minimalist",
+    "Artsy",
+    "Retro",
+    "Eclectic",
+    "Urban",
+    "Edgy",
+    "Romantic",
+    "Western",
+    "Surf Style",
+    "Punk",
+    "Business Professional",
+    "Festival"
+  ],
+  "sex": ["M", "F", "U"],
+  "weather": ["Any", "Sunny", "Rainy", "Snowy", "Windy", "Hot", "Cold"],
+  "season": ["Any", "Spring", "Summer", "Fall", "Winter"]
 };
 
 Map<String, dynamic> outfitCreated = Map.from(outfitSchema);
+List<ClothingItem> chosenItems = [];
 
 class OutfitListPage extends StatefulWidget {
   const OutfitListPage({super.key});
@@ -288,78 +331,56 @@ class _OutfitDetailsState extends State<OutfitDetails> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBody: false,
       appBar: AppBar(
         title: Text(outfit['name']),
         titleTextStyle: Theme.of(context).textTheme.headlineSmall,
       ),
+      bottomNavigationBar: SafeArea(
+        child: GridTileBar(
+          backgroundColor: Theme.of(context).colorScheme.tertiaryContainer,
+          title: Container(),
+          trailing: IconButton(
+            color: Theme.of(context).colorScheme.onTertiaryContainer,
+            onPressed: () {
+              late Future<bool> response;
+              Navigator.of(context).push(
+                RawDialogRoute(
+                  pageBuilder: (context, animation, secondaryAnimation) {
+                    {
+                      return AlertDialog(
+                        title: const Text("Delete outfit"),
+                        actions: [
+                          MaterialButton(
+                            onPressed: () {
+                              response = ApiService.deleteOutfit(outfit['id']);
+                              Navigator.of(context).pop();
+                            },
+                            child: const Text("Yes"),
+                          ),
+                          MaterialButton(
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                            },
+                            child: const Text("Cancel"),
+                          ),
+                        ],
+                      );
+                    }
+                  },
+                ),
+              ).then(
+                (value) {
+                  Navigator.of(context).pop();
+                },
+              );
+            },
+            icon: const Icon(Icons.delete),
+          ),
+        ),
+      ),
       body: Card(
         child: GridTile(
-          footer: GridTileBar(
-              backgroundColor: Theme.of(context).colorScheme.tertiaryContainer,
-              trailing: IconButton(
-                onPressed: () {
-                  late Future<bool> response;
-                  Navigator.of(context).push(
-                    RawDialogRoute(
-                      pageBuilder: (context, animation, secondaryAnimation) {
-                        {
-                          return AlertDialog(
-                            title: const Text("Delete outfit"),
-                            actions: [
-                              MaterialButton(
-                                onPressed: () {
-                                  response =
-                                      ApiService.deleteOutfit(outfit['id']);
-                                  Navigator.of(context).pop();
-                                },
-                                child: const Text("Yes"),
-                              ),
-                              MaterialButton(
-                                onPressed: () {
-                                  Navigator.of(context).pop();
-                                },
-                                child: const Text("Cancel"),
-                              ),
-                            ],
-                          );
-                        }
-                      },
-                    ),
-                  ).then(
-                    (value) {
-                      ScaffoldMessenger.of(context)
-                          .showSnackBar(
-                            SnackBar(
-                              duration: const Duration(seconds: 2),
-                              content: FutureBuilder(
-                                future: response,
-                                builder: (context, snapshot) {
-                                  if (snapshot.connectionState ==
-                                      ConnectionState.waiting) {
-                                    return const Row(
-                                      children: [
-                                        Text("Submitting request"),
-                                        CircularProgressIndicator()
-                                      ],
-                                    );
-                                  } else {
-                                    return Text(
-                                      snapshot.data!
-                                          ? "Item deleted"
-                                          : "Error: item not deleted",
-                                    );
-                                  }
-                                },
-                              ),
-                            ),
-                          )
-                          .closed
-                          .then((value) => Navigator.of(context).pop());
-                    },
-                  );
-                },
-                icon: const Icon(Icons.delete),
-              )),
           child: OrientationBuilder(builder: (context, orientation) {
             if (orientation == Orientation.landscape) {
               return Row(
@@ -372,7 +393,7 @@ class _OutfitDetailsState extends State<OutfitDetails> {
                       child: Container(
                         margin: const EdgeInsets.only(right: 16),
                         child: Image.network(
-                          outfit['image']!,
+                          '${ApiService.serverIp}/smartwardrobeapi/${outfit['image']!}',
                           fit: BoxFit.contain,
                         ),
                       ),
@@ -384,6 +405,7 @@ class _OutfitDetailsState extends State<OutfitDetails> {
                             .where((element) => element.key != 'image')
                             .map((entry) {
                       // ignore: unnecessary_cast
+
                       return Container(
                         decoration: BoxDecoration(
                           color:
@@ -444,18 +466,19 @@ class _OutfitDetailsState extends State<OutfitDetails> {
                 ],
               );
             } else {
+              print(outfit);
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Display image to the side
                   if (outfit['image'] != null)
                     Expanded(
-                      flex: 1, // Adjust the flex value as needed
+                      flex: 2, // Adjust the flex value as needed
                       child: Container(
                         margin: const EdgeInsets.only(right: 16),
                         child: Center(
                           child: Image.network(
-                            outfit['image']!,
+                            '${ApiService.serverIp}/smartwardrobeapi/${outfit['image']!}',
                             fit: BoxFit.contain,
                           ),
                         ),
@@ -465,7 +488,9 @@ class _OutfitDetailsState extends State<OutfitDetails> {
                     flex: 2, // Adjust the flex value as needed
                     child: ListView(
                         children: outfit.entries
-                            .where((element) => element.key != 'image')
+                            .where((element) =>
+                                element.key != 'image' &&
+                                element.key != 'components')
                             .map((entry) {
                       // ignore: unnecessary_cast
                       return Container(
@@ -479,7 +504,6 @@ class _OutfitDetailsState extends State<OutfitDetails> {
                                   .onSecondaryContainer
                                   .withAlpha(127)),
                         ),
-                        // ignore: unnecessary_cast
                         child: ListTile(
                           leading: AutoSizeText(
                             entry.key,
@@ -493,37 +517,39 @@ class _OutfitDetailsState extends State<OutfitDetails> {
                                   ?.fontStyle,
                             ),
                           ),
-                          title: entry.key == 'color'
-                              ? SizedBox(
-                                  width: 42.0,
-                                  height: 42.0,
-                                  child: DecoratedBox(
-                                      decoration: BoxDecoration(
-                                          color:
-                                              Color(int.parse(entry.value)))),
-                                )
-                              : entry.value.runtimeType == (List<String>)
-                                  ? Wrap(
-                                      children: (entry.value as List)
-                                          .map((e) => Chip(
-                                                label: AutoSizeText(
-                                                  e,
-                                                  style: TextStyle(
-                                                      color: Theme.of(context)
-                                                          .colorScheme
-                                                          .onSecondary),
-                                                ),
-                                                backgroundColor:
-                                                    Theme.of(context)
-                                                        .colorScheme
-                                                        .secondary,
-                                              ))
-                                          .toList(),
-                                    )
-                                  : AutoSizeText(entry.value.toString()),
+                          title: AutoSizeText(entry.value.toString()),
                         ),
                       );
                     }).toList()),
+                  ),
+                  Expanded(
+                    flex: 1,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.secondaryContainer,
+                        border: Border.all(
+                            style: BorderStyle.solid,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSecondaryContainer
+                                .withAlpha(127)),
+                      ),
+                      child: ListTile(
+                        leading: AutoSizeText('components'),
+                        title: ListView(
+                          scrollDirection: Axis.horizontal,
+                          children:
+                              (outfit['components'] as List<dynamic>).map((e) {
+                            Map<String, dynamic> clothingItem =
+                                e as Map<String, dynamic>;
+                            return Image.network(
+                              clothingItem['image'],
+                              fit: BoxFit.contain,
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               );
@@ -536,69 +562,16 @@ class _OutfitDetailsState extends State<OutfitDetails> {
 }
 
 class AddOutfitDialog extends StatefulWidget {
-  const AddOutfitDialog({super.key});
+  AddOutfitDialog({super.key}) {
+    chosenItems.clear();
+  }
 
   @override
   State<AddOutfitDialog> createState() => _AddOutfitDialogState();
 }
 
 class _AddOutfitDialogState extends State<AddOutfitDialog> {
-  final _formKey = GlobalKey<FormState>();
-  List<Widget> textFormFields = [];
-  List<Widget> featureChips = [];
-  String? capturedImage;
-  String feature = '';
-  List<ClothingItem> chosenItems = [];
   _AddOutfitDialogState();
-
-  Widget _buildImagePicker(context) {
-    return Builder(builder: (context) {
-      if (capturedImage == null) {
-        return Row(
-          children: [
-            MaterialButton(
-              onPressed: () async {
-                capturedImage = await ImageUtils.imageToBase64(
-                    (await ImageUtils.captureImage(ImageSource.camera))!);
-                setState(() {});
-              },
-              child: const Icon(
-                Icons.add_a_photo,
-              ),
-            ),
-            MaterialButton(
-              onPressed: () async {
-                capturedImage = await ImageUtils.imageToBase64(
-                    (await ImageUtils.captureImage(ImageSource.gallery))!);
-                setState(() {});
-              },
-              child: const Icon(
-                Icons.collections,
-              ),
-            ),
-            MaterialButton(
-              onPressed: () async {
-                capturedImage = await ApiService.generateOutfitImage({});
-                setState(() {});
-              },
-              child: const Icon(
-                Icons.download_for_offline_outlined,
-              ),
-            ),
-          ],
-        );
-      } else {
-        return Column(
-          children: [
-            Expanded(
-              flex: 10,
-              child: Image.memory(base64Decode(capturedImage!)),
-            ),
-          ],
-        );
-      }
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -610,113 +583,110 @@ class _AddOutfitDialogState extends State<AddOutfitDialog> {
       ),
       body: Column(
         children: [
-          Expanded(
-            flex: 3,
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: DottedBorder(
-                dashPattern: [6, 3, 2, 3],
-                color:
-                    Theme.of(context).colorScheme.onBackground.withAlpha(127),
-                child: Center(child: _buildImagePicker(context)),
-              ),
-            ),
-          ),
+          // Expanded(
+          //   flex: 3,
+          //   child: Padding(
+          //     padding: const EdgeInsets.all(20),
+          //     child: DottedBorder(
+          //       dashPattern: [6, 3, 2, 3],
+          //       color:
+          //           Theme.of(context).colorScheme.onBackground.withAlpha(127),
+          //       child: Center(child: _buildImagePicker(context)),
+          //     ),
+          //   ),
+          // ),
           Expanded(
             flex: 5,
-            child: Form(
-              key: _formKey,
-              child: InkWell(
-                child: Builder(builder: (context) {
-                  List<Widget> gridTiles = chosenItems
-                      .map(
-                        (e) => InkWell(
-                          onLongPress: () {
-                            setState(() {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  duration: Duration(seconds: 1),
-                                  content: Text('Item removed'),
-                                ),
-                              );
-                              chosenItems.remove(e);
-                            });
-                          },
-                          child:
-                              ClothingItemGridTile(clothingItem: e) as Widget,
-                        ),
-                      )
-                      .toList();
-                  gridTiles.insert(
-                      0,
-                      InkWell(
-                        onTap: () {
-                          Navigator.of(context).push(RawDialogRoute(
-                            pageBuilder:
-                                (context, animation, secondaryAnimation) {
-                              return Scaffold(
-                                appBar: AppBar(
-                                  title: Text('Add item to outfit'),
-                                  titleTextStyle: Theme.of(context)
-                                      .textTheme
-                                      .headlineMedium,
-                                ),
-                                body: FutureBuilder(
-                                  future: ApiService.fetchClothingItems(),
-                                  builder: (context, snapshot) {
-                                    if (snapshot.hasData) {
-                                      return ResponsiveGridView(
-                                          children: snapshot.data!
-                                              .where((element) => !chosenItems
-                                                  .contains(element))
-                                              .map((e) => InkWell(
-                                                    onTap: () {
-                                                      chosenItems.add(e);
-                                                      Navigator.pop(context);
-                                                    },
-                                                    child: ClothingItemGridTile(
-                                                      clothingItem: e,
-                                                    ),
-                                                  ))
-                                              .toList());
-                                    } else {
-                                      return Center(
-                                        child: CircularProgressIndicator(),
-                                      );
-                                    }
-                                  },
-                                ),
-                              );
-                            },
-                          )).then((value) => setState(
-                                () {},
-                              ));
+            child: InkWell(
+              child: Builder(builder: (context) {
+                List<Widget> gridTiles = chosenItems
+                    .map(
+                      (e) => InkWell(
+                        onLongPress: () {
+                          setState(() {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                duration: Duration(seconds: 1),
+                                content: Text('Item removed'),
+                              ),
+                            );
+                            chosenItems.remove(e);
+                          });
                         },
-                        child: GridTile(
-                          child: DottedBorder(
-                              dashPattern: [6, 3, 2, 3],
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onBackground
-                                  .withAlpha(127),
-                              child: Center(
-                                child: Icon(Icons.add),
-                              )),
-                        ),
-                      ));
-                  return Column(
-                    children: [
-                      Expanded(child: AutoSizeText('Selected Items')),
-                      Expanded(
-                        flex: 20,
-                        child: ResponsiveGridView(
-                          children: gridTiles,
-                        ),
+                        child: ClothingItemGridTile(clothingItem: e) as Widget,
                       ),
-                    ],
-                  );
-                }),
-              ),
+                    )
+                    .toList();
+                gridTiles.insert(
+                    0,
+                    InkWell(
+                      onTap: () {
+                        Navigator.of(context).push(RawDialogRoute(
+                          pageBuilder:
+                              (context, animation, secondaryAnimation) {
+                            return Scaffold(
+                              appBar: AppBar(
+                                title: Text('Add item to outfit'),
+                                titleTextStyle:
+                                    Theme.of(context).textTheme.headlineMedium,
+                              ),
+                              body: FutureBuilder(
+                                future: ApiService.fetchClothingItems(),
+                                builder: (context, snapshot) {
+                                  if (snapshot.hasData) {
+                                    return ResponsiveGridView(
+                                        children: snapshot.data!
+                                            .where((element) =>
+                                                !chosenItems.contains(element))
+                                            .map((e) => InkWell(
+                                                  onTap: () {
+                                                    chosenItems.add(e);
+                                                    Navigator.pop(context);
+                                                  },
+                                                  child: ClothingItemGridTile(
+                                                    clothingItem: e,
+                                                  ),
+                                                ))
+                                            .toList());
+                                  } else {
+                                    return Center(
+                                      child: CircularProgressIndicator(),
+                                    );
+                                  }
+                                },
+                              ),
+                            );
+                          },
+                        )).then((value) {
+                          setState(
+                            () {},
+                          );
+                        });
+                      },
+                      child: GridTile(
+                        child: DottedBorder(
+                            dashPattern: [6, 3, 2, 3],
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onBackground
+                                .withAlpha(127),
+                            child: Center(
+                              child: Icon(Icons.add),
+                            )),
+                      ),
+                    ));
+                return Column(
+                  children: [
+                    Expanded(child: AutoSizeText('Selected Items')),
+                    Expanded(
+                      flex: 20,
+                      child: ResponsiveGridView(
+                        children: gridTiles,
+                      ),
+                    ),
+                  ],
+                );
+              }),
             ),
           ),
         ],
@@ -725,42 +695,18 @@ class _AddOutfitDialogState extends State<AddOutfitDialog> {
         tileColor: Theme.of(context).colorScheme.tertiaryContainer,
         leading: MaterialButton(
           onPressed: () {
-            if (_formKey.currentState!.validate()) {
-              Future<bool> response = ApiService.insertOutfit(outfitCreated);
-              ScaffoldMessenger.of(context)
-                  .showSnackBar(
-                    SnackBar(
-                      content: FutureBuilder(
-                        future: response,
-                        builder: (context, snapshot) {
-                          if (snapshot.connectionState ==
-                              ConnectionState.waiting) {
-                            return const Row(
-                              children: [
-                                Text("Submitting data"),
-                                CircularProgressIndicator()
-                              ],
-                            );
-                          } else {
-                            return Text(
-                              snapshot.data!
-                                  ? "Outfit created"
-                                  : "Error: outfit not created",
-                            );
-                          }
-                        },
-                      ),
-                    ),
-                  )
-                  .closed
-                  .then(
-                (value) {
-                  Navigator.of(context).pop();
-                },
-              );
-            }
+            Navigator.of(context).push(RawDialogRoute(
+              pageBuilder: (context, animation, secondaryAnimation) {
+                outfitCreated['components'] = chosenItems;
+                capturedImage = null;
+
+                return InsertOutfitDetailsWidget();
+              },
+            )).then(
+              (value) {},
+            );
           },
-          child: const Text('Submit'),
+          child: const Text('Insert info'),
         ),
         trailing: MaterialButton(
           onPressed: () {
@@ -797,7 +743,7 @@ class OutfitGridTile extends StatelessWidget {
           subtitle: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8.0),
             child: Text(
-              outfit['occasion'],
+              outfit['occasion'] ?? '',
               style: TextStyle(
                   fontSize: 14.0,
                   color: Theme.of(context).colorScheme.onSecondaryContainer),
@@ -805,7 +751,9 @@ class OutfitGridTile extends StatelessWidget {
           ),
         ),
         child: Image.network(
-          outfit['image'] ?? '', // Provide a default image URL or handle null
+          outfit['image'] != null
+              ? '${ApiService.serverIp}/smartwardrobeapi/${outfit['image']}'
+              : '', // Provide a default image URL or handle null
           fit: BoxFit.cover,
         ),
       ),
@@ -813,19 +761,277 @@ class OutfitGridTile extends StatelessWidget {
   }
 }
 
-class ClothingItemDetailsWidget extends StatefulWidget {
-  const ClothingItemDetailsWidget({super.key});
+class InsertOutfitDetailsWidget extends StatefulWidget {
+  const InsertOutfitDetailsWidget({super.key});
 
   @override
-  State<ClothingItemDetailsWidget> createState() =>
-      _ClothingItemDetailsWidgetState();
+  State<InsertOutfitDetailsWidget> createState() =>
+      _InsertOutfitDetailsWidgetState();
 }
 
-class _ClothingItemDetailsWidgetState extends State<ClothingItemDetailsWidget> {
+class _InsertOutfitDetailsWidgetState extends State<InsertOutfitDetailsWidget> {
+  final _formKey = GlobalKey<FormState>();
+
+  void _generateImage() async {
+    var capturedImageFuture = ApiService.generateOutfitImage(outfitCreated);
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(
+            backgroundColor: Theme.of(context).colorScheme.secondary,
+            duration: Duration(seconds: 300),
+            content: FutureBuilder(
+              future: capturedImageFuture,
+              builder: (context, snapshot) {
+                if (snapshot.hasData) {
+                  capturedImage = snapshot.data!;
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  return Text(
+                    'Image generated',
+                    style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSecondary),
+                  );
+                } else {
+                  return ListTile(
+                      leading: CircularProgressIndicator(
+                          color: Theme.of(context).colorScheme.onSecondary),
+                      title: Text('Generating image',
+                          style: TextStyle(
+                              color:
+                                  Theme.of(context).colorScheme.onSecondary)));
+                }
+              },
+            )))
+        .closed
+        .then(
+      (value) {
+        setState(() {});
+      },
+    );
+  }
+
+  Widget _buildImagePicker() {
+    return Builder(builder: (context) {
+      if (capturedImage == null) {
+        return Row(
+          children: [
+            MaterialButton(
+              onPressed: () async {
+                capturedImage = await ImageUtils.imageToBase64(
+                    (await ImageUtils.captureImage(ImageSource.camera))!);
+                setState(() {});
+              },
+              child: const Icon(
+                Icons.add_a_photo,
+              ),
+            ),
+            MaterialButton(
+              onPressed: () async {
+                capturedImage = await ImageUtils.imageToBase64(
+                    (await ImageUtils.captureImage(ImageSource.gallery))!);
+
+                setState(() {});
+              },
+              child: const Icon(
+                Icons.collections,
+              ),
+            ),
+            MaterialButton(
+              onPressed: _generateImage,
+              child: const Icon(
+                Icons.download_for_offline_outlined,
+              ),
+            ),
+          ],
+        );
+      } else {
+        return Column(
+          children: [
+            Expanded(
+              flex: 10,
+              child: Image.memory(base64Decode(capturedImage!)),
+            ),
+          ],
+        );
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          setState(() {});
+        },
+        child: Icon(Icons.refresh),
+      ),
+      appBar: AppBar(
+        title: Text('Insert outfit info'),
+        titleTextStyle: Theme.of(context).textTheme.headlineMedium,
+      ),
+      body: Form(
+        key: _formKey,
+        child: Column(
+          children: [
+            Expanded(
+                flex: 4,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 30),
+                  child: DottedBorder(
+                      dashPattern: [6, 3, 2, 3],
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onBackground
+                          .withAlpha(127),
+                      child: _buildImagePicker()),
+                )),
+            Expanded(
+              flex: 8,
+              child: ListView(
+                // ignore: unnecessary_cast
+                children: [
+                      // ignore: unnecessary_cast
+                      TextFormField(
+                        onChanged: (value) {
+                          outfitCreated["name"] = value;
+                        },
+                        controller:
+                            TextEditingController(text: outfitCreated["name"]),
+                        decoration: InputDecoration(labelText: "name"),
+                        validator: (input) {
+                          if (input == null || input.isEmpty) {
+                            return 'Please enter a name';
+                          }
+                          outfitCreated["name"] = input;
+                          return null;
+                        },
+                      ) as Widget,
+                      // ignore: unnecessary_cast
+                      TextFormField(
+                        onChanged: (value) {
+                          outfitCreated["description"] = value;
+                        },
+                        controller: TextEditingController(
+                            text: outfitCreated["description"]),
+                        decoration: InputDecoration(labelText: "description"),
+                        validator: (input) {
+                          // if (input == null || input.isEmpty) {
+                          //   return 'Please enter a description';
+                          // }
+                          outfitCreated["description"] = input;
+                          return null;
+                        },
+                      ) as Widget,
+                    ] +
+                    outfitSchema.entries
+                        .where((element) =>
+                            element.key != "image" &&
+                            element.key != "name" &&
+                            element.key != 'id' &&
+                            element.key != 'description' &&
+                            element.value is String)
+                        .map(
+                          // ignore: unnecessary_cast
+                          (outfitSchemaEntry) => DropDownTextField(
+                            textFieldDecoration: InputDecoration(
+                                hintText: outfitSchemaEntry.key),
+                            enableSearch: true,
+                            clearOption: true,
+                            searchAutofocus: true,
+                            onChanged: (selectedValue) {
+                              outfitCreated[outfitSchemaEntry.key] =
+                                  (selectedValue as DropDownValueModel).value;
+                            },
+                            validator: (input) {
+                              if (outfitSchemaEntry.key == "occasion" ||
+                                  outfitSchemaEntry.key == "sex") {
+                                if (input == null || input.isEmpty) {
+                                  return 'Please enter a ${outfitSchemaEntry.key}';
+                                }
+                                outfitCreated[outfitSchemaEntry.key] = input;
+                                return null;
+                              }
+                              outfitCreated[outfitSchemaEntry.key] = input;
+                              return null;
+                            },
+                            dropDownList: outfitMapHints
+                                    .containsKey(outfitSchemaEntry.key)
+                                ? outfitMapHints[outfitSchemaEntry.key]!
+                                    .map((hint) => DropDownValueModel(
+                                        name: hint, value: hint))
+                                    .toList()
+                                : [],
+                          ) as Widget,
+                        )
+                        .toList(),
+              ),
+            ),
+            Expanded(
+              flex: 1,
+              child: GridTileBar(
+                backgroundColor:
+                    Theme.of(context).colorScheme.tertiaryContainer,
+                title: MaterialButton(
+                  onPressed: () {
+                    if (_formKey.currentState!.validate()) {
+                      outfitCreated["components"] = chosenItems;
+                      outfitCreated['image'] = capturedImage;
+
+                      var insertFuture = ApiService.insertOutfit(outfitCreated);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          backgroundColor:
+                              Theme.of(context).colorScheme.secondary,
+                          duration: Duration(
+                            seconds: 300,
+                          ),
+                          content: FutureBuilder(
+                            future: insertFuture,
+                            builder: (context, snapshot) {
+                              if (snapshot.hasData) {
+                                if (snapshot.data!) {
+                                  return Text('Outfit created successfully',
+                                      style: TextStyle(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSecondary));
+                                } else {
+                                  return Text('Error creating outfit',
+                                      style: TextStyle(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSecondary));
+                                }
+                              } else {
+                                return ListTile(
+                                  leading: CircularProgressIndicator(),
+                                  title: Text('Inserting outfit',
+                                      style: TextStyle(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSecondary)),
+                                );
+                              }
+                            },
+                          ),
+                        ),
+                      );
+                      insertFuture.then(
+                        (value) => Future.delayed(Duration(seconds: 1)).then(
+                          (value) {
+                            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                            Navigator.of(context).pop();
+                          },
+                        ),
+                      );
+                    }
+                  },
+                  child: Text('Submit outfit'),
+                ),
+              ),
+            )
+          ],
+        ),
+      ),
     );
   }
 }

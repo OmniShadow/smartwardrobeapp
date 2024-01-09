@@ -1,10 +1,12 @@
 import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:wardrobe/common/utils/utils.dart';
 import 'package:wardrobe/home/models/clothing_data.dart';
+import 'package:color_parser/color_parser.dart';
 
 class ApiService {
-  static String serverIp = "http://79.33.3.109:8080";
+  static String serverIp = "http://79.30.219.117:8080";
   static int controllerId = -1;
   static String espLocalIp = "192.168.1.83";
   static bool espWifiConnected = false;
@@ -43,6 +45,15 @@ class ApiService {
     } catch (e) {
       throw Exception('Error during API request: $e');
     }
+  }
+
+  static Future<Map<String, dynamic>> getWeatherData(
+      double latitude, double longitude) async {
+    String jsonString = await ApiService.makeRequest(
+        method: 'GET',
+        url:
+            'https://api.open-meteo.com/v1/forecast?latitude=$latitude&longitude=$longitude&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,rain,showers,snowfall&forecast_days=1');
+    return json.decode(jsonString);
   }
 
   static Future<bool> fetchEspLocalIp() async {
@@ -118,16 +129,19 @@ class ApiService {
       url: '${ApiService.serverIp}/smartwardrobeapi/api/outfit/list',
     );
     Map<String, dynamic> jsonMap = json.decode(jsonString);
-    List<Map<String, dynamic>> outfits = jsonMap['data'];
 
-    return outfits;
+    List<dynamic> outfits = jsonMap['data'];
+
+    return outfits.map((e) => e as Map<String, dynamic>).toList();
   }
 
-  static Future<bool> insertOutfit(Map<String, dynamic> payload) async {
+  static Future<bool> insertOutfit(Map<String, dynamic> outfit) async {
+    outfit["components"] =
+        (outfit["components"] as List<ClothingItem>).map((e) => e.id).toList();
     String jsonString = await ApiService.makeRequest(
       method: 'POST',
       url: '${ApiService.serverIp}/smartwardrobeapi/api/outfit/add',
-      payload: payload,
+      payload: outfit,
     );
     var jsonMap = jsonDecode(jsonString);
     return jsonMap['data'];
@@ -136,7 +150,7 @@ class ApiService {
   static Future<bool> deleteOutfit(int id) async {
     String jsonString = await ApiService.makeRequest(
       method: 'POST',
-      url: '${ApiService.serverIp}/smartwardrobeapi/api/outfit/$id/delete',
+      url: '${ApiService.serverIp}/smartwardrobeapi/api/outfit/delete',
       payload: {'id': id},
     );
     var jsonMap = jsonDecode(jsonString);
@@ -145,11 +159,24 @@ class ApiService {
 
   static Future<String> generateOutfitImage(Map<String, dynamic> outfit) async {
     Object payload = {};
-    String prompt = '';
+    String sex = outfit['sex'] == 'M' ? 'man' : 'woman';
+    List<ClothingItem> outfitComponents =
+        outfit['components'] as List<ClothingItem>;
+    String prompt =
+        '<lora:PlasticPeople:2> full body of a $sex, bald, posing, wearing a ${outfitComponents.fold(
+              '',
+              (previousItem, currentItem) => previousItem +=
+                  '${ColorParser.color(Color(int.parse(currentItem.color))).toName()},${currentItem.category}, ${currentItem.features.fold("", (previousValue, element) => previousValue += ',$element')}',
+            ).toString()}';
+    print(prompt);
+    outfit['components'] =
+        (outfit['components'] as List<ClothingItem>).map((e) => e.id).toList();
     String jsonString = await ApiService.makeRequest(
       method: 'POST',
       url: '${ApiService.serverIp}/smartwardrobeapi/api/imagegen/generate',
-      payload: {},
+      payload: {
+        'prompt': prompt,
+      },
     );
     var jsonMap = jsonDecode(jsonString);
     return jsonMap['data'];
@@ -179,6 +206,7 @@ class ApiService {
       url: '${ApiService.serverIp}/smartwardrobeapi/api/clothing/add',
       payload: payload,
     );
+    print(jsonString);
     var jsonMap = jsonDecode(jsonString);
     return jsonMap['data'];
   }
@@ -344,8 +372,6 @@ class ApiService {
       },
     );
 
-    print(json);
-
     json = removeSpecialCharacters(json);
 
     jsonMap = jsonDecode(
@@ -353,8 +379,6 @@ class ApiService {
     );
 
     jsonMap = jsonMap['data'];
-
-    print(jsonMap);
 
     jsonMap.forEach((key, value) {
       if (clothingMap.containsKey(key)) {

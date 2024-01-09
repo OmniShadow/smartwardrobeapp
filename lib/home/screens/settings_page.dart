@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:wardrobe/common/utils/apiUtils.dart';
 import 'package:app_settings/app_settings.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:wardrobe/main.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -14,7 +15,9 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
+  bool darkMode = true;
   bool apiIpEnabled = false;
+  Color pickedColor = themeData.primaryColor;
   @override
   Widget build(BuildContext context) {
     return Scaffold(

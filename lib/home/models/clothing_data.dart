@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
+import 'package:wardrobe/common/utils/apiUtils.dart';
 
 class ClothingItem {
   int id;
@@ -60,7 +61,9 @@ class ClothingItem {
       size: map['size'] as String,
       material: map['material'] != null ? map['material'] as String : "",
       features: (map['features'] as List).map((e) => e as String).toList(),
-      image: map['image'] != null ? map['image'] as String : "",
+      image: map['image'] != null
+          ? '${ApiService.serverIp}/smartwardrobeapi/${map['image'] as String}'
+          : "",
       season: map['season'] as String,
       sex: map['sex'] as String,
       description:
