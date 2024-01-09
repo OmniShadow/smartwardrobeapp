@@ -17,6 +17,7 @@ import 'package:auto_size_text/auto_size_text.dart';
 Map<String, List<String>> clothingMapHints = {
   "category": [
     "Top",
+    "Shirts",
     "Bottoms",
     "Dresses",
     "Outerwear",
@@ -73,6 +74,7 @@ Map<String, List<String>> clothingMapHints = {
     "Festival Wear",
     "Travel Wear",
     "Lingerie",
+    "Shoes",
     "Athletic Shoes",
     "Casual Shoes",
     "Formal Shoes",
@@ -519,16 +521,31 @@ class _ClothingItemDetailsState extends State<ClothingItemDetails> {
                 }
               },
             ),
-            leading: IconButton(
-              icon: const Tooltip(
-                message: 'Open associated drawer',
-                child: Icon(Icons.density_small),
-              ),
-              onPressed: () async {
-                int address = (await ApiService.getAssociatedDrawer(
-                    clothingItem.id))['address'];
-                ApiService.openDrawer(address, 15, 2);
-              },
+            leading: Row(
+              children: [
+                IconButton(
+                  icon: const Tooltip(
+                    message: 'Open associated drawer',
+                    child: Icon(Icons.density_small),
+                  ),
+                  onPressed: () async {
+                    int address = (await ApiService.getAssociatedDrawer(
+                        clothingItem.id))['address'];
+                    ApiService.openDrawer(address, 15, 2);
+                  },
+                ),
+                IconButton(
+                  icon: const Tooltip(
+                    message: 'Close associated drawer',
+                    child: Icon(Icons.density_large),
+                  ),
+                  onPressed: () async {
+                    int address = (await ApiService.getAssociatedDrawer(
+                        clothingItem.id))['address'];
+                    ApiService.closeDrawer(address, 15, 2);
+                  },
+                ),
+              ],
             ),
             trailing: IconButton(
               onPressed: () {
@@ -1102,38 +1119,10 @@ class _AddClothingItemPageState extends State<AddClothingItemPage> {
                   Navigator.of(context).push(RawDialogRoute(
                     pageBuilder: (context, animation, secondaryAnimation) {
                       {
-                        return AlertDialog(
-                          title: const Text('Insert into drawer?'),
-                          actions: [
-                            MaterialButton(
-                              onPressed: () {
-                                Navigator.of(context).push(RawDialogRoute(
-                                  pageBuilder:
-                                      (context, animation, secondaryAnimation) {
-                                    {
-                                      print(itemId);
-                                      return Dialog(
-                                        child: DrawerSelectionScreen(
-                                          clothingItem: itemId,
-                                        ),
-                                      );
-                                    }
-                                  },
-                                )).then(
-                                  (value) {
-                                    Navigator.of(context).pop();
-                                  },
-                                );
-                              },
-                              child: const Text('Yes'),
-                            ),
-                            MaterialButton(
-                              onPressed: () {
-                                Navigator.of(context).pop();
-                              },
-                              child: const Text('No'),
-                            ),
-                          ],
+                        return Dialog(
+                          child: DrawerSelectionScreen(
+                            clothingItem: itemId,
+                          ),
                         );
                       }
                     },

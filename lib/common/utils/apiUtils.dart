@@ -93,10 +93,7 @@ class ApiService {
     );
     Map<String, dynamic> jsonMap = jsonDecode(jsonString);
     List<dynamic> drawers = jsonMap['data'];
-    return drawers
-        .where((element) => element['status'] == 'Connected')
-        .map((e) => e as Map<String, dynamic>)
-        .toList();
+    return drawers.map((e) => e as Map<String, dynamic>).toList();
   }
 
   static Future<List<ClothingItem>> fetchClothingItems() async {
@@ -112,6 +109,15 @@ class ApiService {
     }
 
     return clothingItems;
+  }
+
+  static Future<ClothingItem> fetchClothingItem(int id) async {
+    String jsonString = await ApiService.makeRequest(
+      method: "GET",
+      url: '${ApiService.serverIp}/smartwardrobeapi/api/clothing/$id',
+    );
+    Map<String, dynamic> jsonMap = json.decode(jsonString);
+    return ClothingItem.fromMap(jsonMap);
   }
 
   static Future<Map<String, dynamic>> getOutfitSchema() async {
@@ -157,16 +163,17 @@ class ApiService {
     return jsonMap['data'];
   }
 
-  static Future<String> generateOutfitImage(Map<String, dynamic> outfit) async {
+  static Future<String> generateOutfitImage(
+      Map<String, dynamic> outfit, bool plasticPeople) async {
     Object payload = {};
     String sex = outfit['sex'] == 'M' ? 'man' : 'woman';
     List<ClothingItem> outfitComponents =
         outfit['components'] as List<ClothingItem>;
     String prompt =
-        '<lora:PlasticPeople:2> full body of a $sex, bald, posing, wearing a ${outfitComponents.fold(
+        '${plasticPeople ? '<lora:PlasticPeople:2> bald,' : ''} full body of a $sex, posing, wearing a ${outfitComponents.fold(
               '',
               (previousItem, currentItem) => previousItem +=
-                  '${ColorParser.color(Color(int.parse(currentItem.color))).toName()},${currentItem.category}, ${currentItem.features.fold("", (previousValue, element) => previousValue += ',$element')}',
+                  '${ColorParser.color(Color(int.parse(currentItem.color))).toName()},${currentItem.category}, ${currentItem.features.fold("", (previousValue, element) => previousValue += ',$element')} BREAK',
             ).toString()}';
     print(prompt);
     outfit['components'] =
@@ -321,9 +328,15 @@ class ApiService {
       url:
           '${ApiService.serverIp}/smartwardrobeapi/api/clothing/drawer?id=$clothingId',
     );
-    var jsonMap = jsonDecode(jsonString);
+    var jsonMap;
+    print(jsonString);
+    try {
+      jsonMap = jsonDecode(jsonString);
+    } on Exception {
+      return {};
+    }
 
-    return jsonMap['data'];
+    return jsonMap['data'] ?? {};
   }
 
   static Future<bool> deleteClothingItem(int id) async {

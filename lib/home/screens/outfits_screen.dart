@@ -340,6 +340,58 @@ class _OutfitDetailsState extends State<OutfitDetails> {
         child: GridTileBar(
           backgroundColor: Theme.of(context).colorScheme.tertiaryContainer,
           title: Container(),
+          leading: Row(
+            children: [
+              Tooltip(
+                message: 'Open drawers containing outfit components',
+                child: IconButton(
+                  onPressed: () async {
+                    Set<int> addresses = {};
+                    print(outfit['components']);
+                    (outfit['components'] as List<dynamic>)
+                        .forEach((element) async {
+                      Map<String, dynamic> clothingItem =
+                          element as Map<String, dynamic>;
+                      print(clothingItem);
+
+                      int address = (await ApiService.getAssociatedDrawer(
+                          clothingItem['id']))['address'];
+                      if (!addresses.contains(address)) {
+                        ApiService.openDrawer(address, 15, 2);
+                        addresses.add(address);
+                      }
+                    });
+                  },
+                  icon: Icon(Icons.density_medium_outlined),
+                  color: Theme.of(context).colorScheme.onTertiaryContainer,
+                ),
+              ),
+              Tooltip(
+                message: 'Close drawers containing outfit components',
+                child: IconButton(
+                  onPressed: () async {
+                    Set<int> addresses = {};
+                    print(outfit['components']);
+                    (outfit['components'] as List<dynamic>)
+                        .forEach((element) async {
+                      Map<String, dynamic> clothingItem =
+                          element as Map<String, dynamic>;
+                      print(clothingItem);
+
+                      int address = (await ApiService.getAssociatedDrawer(
+                          clothingItem['id']))['address'];
+                      if (!addresses.contains(address)) {
+                        ApiService.closeDrawer(address, 15, 2);
+                        addresses.add(address);
+                      }
+                    });
+                  },
+                  icon: Icon(Icons.density_large),
+                  color: Theme.of(context).colorScheme.onTertiaryContainer,
+                ),
+              ),
+            ],
+          ),
           trailing: IconButton(
             color: Theme.of(context).colorScheme.onTertiaryContainer,
             onPressed: () {
@@ -381,180 +433,89 @@ class _OutfitDetailsState extends State<OutfitDetails> {
       ),
       body: Card(
         child: GridTile(
-          child: OrientationBuilder(builder: (context, orientation) {
-            if (orientation == Orientation.landscape) {
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Display image to the side
-                  if (outfit['image'] != null)
-                    Expanded(
-                      flex: 1, // Adjust the flex value as needed
-                      child: Container(
-                        margin: const EdgeInsets.only(right: 16),
-                        child: Image.network(
-                          '${ApiService.serverIp}/smartwardrobeapi/${outfit['image']!}',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Display image to the side
+              if (outfit['image'] != null)
+                Expanded(
+                  flex: 2, // Adjust the flex value as needed
+                  child: Container(
+                    margin: const EdgeInsets.only(right: 16),
+                    child: Center(
+                      child: Image.network(
+                        '${ApiService.serverIp}/smartwardrobeapi/${outfit['image']!}',
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                  ),
+                ),
+              Expanded(
+                flex: 2, // Adjust the flex value as needed
+                child: ListView(
+                    children: outfit.entries
+                        .where((element) =>
+                            element.key != 'image' &&
+                            element.key != 'components')
+                        .map((entry) {
+                  // ignore: unnecessary_cast
+                  return Container(
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.secondaryContainer,
+                      border: Border.all(
+                          style: BorderStyle.solid,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSecondaryContainer
+                              .withAlpha(127)),
+                    ),
+                    child: ListTile(
+                      leading: AutoSizeText(
+                        entry.key,
+                        style: TextStyle(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSecondaryContainer,
+                          fontStyle:
+                              Theme.of(context).textTheme.bodyMedium?.fontStyle,
+                        ),
+                      ),
+                      title: AutoSizeText(entry.value.toString()),
+                    ),
+                  );
+                }).toList()),
+              ),
+              Expanded(
+                flex: 1,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.secondaryContainer,
+                    border: Border.all(
+                        style: BorderStyle.solid,
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSecondaryContainer
+                            .withAlpha(127)),
+                  ),
+                  child: ListTile(
+                    leading: AutoSizeText('components'),
+                    title: ListView(
+                      scrollDirection: Axis.horizontal,
+                      children:
+                          (outfit['components'] as List<dynamic>).map((e) {
+                        Map<String, dynamic> clothingItem =
+                            e as Map<String, dynamic>;
+                        return Image.network(
+                          '${ApiService.serverIp}/smartwardrobeapi/${clothingItem['image']}',
                           fit: BoxFit.contain,
-                        ),
-                      ),
-                    ),
-                  Expanded(
-                    flex: 1, // Adjust the flex value as needed
-                    child: ListView(
-                        children: outfit.entries
-                            .where((element) => element.key != 'image')
-                            .map((entry) {
-                      // ignore: unnecessary_cast
-
-                      return Container(
-                        decoration: BoxDecoration(
-                          color:
-                              Theme.of(context).colorScheme.secondaryContainer,
-                          border: Border.all(
-                              style: BorderStyle.solid,
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSecondaryContainer
-                                  .withAlpha(127)),
-                        ),
-                        // ignore: unnecessary_cast
-                        child: ListTile(
-                          leading: AutoSizeText(
-                            entry.key,
-                            style: TextStyle(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSecondaryContainer,
-                              fontStyle: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium
-                                  ?.fontStyle,
-                            ),
-                          ),
-                          title: entry.key == 'color'
-                              ? SizedBox(
-                                  width: 42.0,
-                                  height: 42.0,
-                                  child: DecoratedBox(
-                                      decoration: BoxDecoration(
-                                          color:
-                                              Color(int.parse(entry.value)))),
-                                )
-                              : entry.value.runtimeType == (List<String>)
-                                  ? Wrap(
-                                      children: (entry.value as List)
-                                          .map((e) => Chip(
-                                                label: AutoSizeText(
-                                                  e,
-                                                  style: TextStyle(
-                                                      color: Theme.of(context)
-                                                          .colorScheme
-                                                          .onSecondary),
-                                                ),
-                                                backgroundColor:
-                                                    Theme.of(context)
-                                                        .colorScheme
-                                                        .secondary,
-                                              ))
-                                          .toList(),
-                                    )
-                                  : AutoSizeText(entry.value.toString()),
-                        ),
-                      );
-                    }).toList()),
-                  ),
-                ],
-              );
-            } else {
-              print(outfit);
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Display image to the side
-                  if (outfit['image'] != null)
-                    Expanded(
-                      flex: 2, // Adjust the flex value as needed
-                      child: Container(
-                        margin: const EdgeInsets.only(right: 16),
-                        child: Center(
-                          child: Image.network(
-                            '${ApiService.serverIp}/smartwardrobeapi/${outfit['image']!}',
-                            fit: BoxFit.contain,
-                          ),
-                        ),
-                      ),
-                    ),
-                  Expanded(
-                    flex: 2, // Adjust the flex value as needed
-                    child: ListView(
-                        children: outfit.entries
-                            .where((element) =>
-                                element.key != 'image' &&
-                                element.key != 'components')
-                            .map((entry) {
-                      // ignore: unnecessary_cast
-                      return Container(
-                        decoration: BoxDecoration(
-                          color:
-                              Theme.of(context).colorScheme.secondaryContainer,
-                          border: Border.all(
-                              style: BorderStyle.solid,
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSecondaryContainer
-                                  .withAlpha(127)),
-                        ),
-                        child: ListTile(
-                          leading: AutoSizeText(
-                            entry.key,
-                            style: TextStyle(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSecondaryContainer,
-                              fontStyle: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium
-                                  ?.fontStyle,
-                            ),
-                          ),
-                          title: AutoSizeText(entry.value.toString()),
-                        ),
-                      );
-                    }).toList()),
-                  ),
-                  Expanded(
-                    flex: 1,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.secondaryContainer,
-                        border: Border.all(
-                            style: BorderStyle.solid,
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSecondaryContainer
-                                .withAlpha(127)),
-                      ),
-                      child: ListTile(
-                        leading: AutoSizeText('components'),
-                        title: ListView(
-                          scrollDirection: Axis.horizontal,
-                          children:
-                              (outfit['components'] as List<dynamic>).map((e) {
-                            Map<String, dynamic> clothingItem =
-                                e as Map<String, dynamic>;
-                            return Image.network(
-                              clothingItem['image'],
-                              fit: BoxFit.contain,
-                            );
-                          }).toList(),
-                        ),
-                      ),
+                        );
+                      }).toList(),
                     ),
                   ),
-                ],
-              );
-            }
-          }),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -772,8 +733,10 @@ class InsertOutfitDetailsWidget extends StatefulWidget {
 class _InsertOutfitDetailsWidgetState extends State<InsertOutfitDetailsWidget> {
   final _formKey = GlobalKey<FormState>();
 
+  bool plasticPeople = true;
+
   void _generateImage() async {
-    var capturedImageFuture = ApiService.generateOutfitImage(outfitCreated);
+    var capturedImageFuture = ApiService.generateOutfitImage(outfitCreated, plasticPeople);
     ScaffoldMessenger.of(context)
         .showSnackBar(SnackBar(
             backgroundColor: Theme.of(context).colorScheme.secondary,
@@ -873,17 +836,29 @@ class _InsertOutfitDetailsWidgetState extends State<InsertOutfitDetailsWidget> {
         child: Column(
           children: [
             Expanded(
-                flex: 4,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 30),
-                  child: DottedBorder(
-                      dashPattern: [6, 3, 2, 3],
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onBackground
-                          .withAlpha(127),
-                      child: _buildImagePicker()),
-                )),
+              flex: 4,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 30),
+                child: DottedBorder(
+                    dashPattern: [6, 3, 2, 3],
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onBackground
+                        .withAlpha(127),
+                    child: _buildImagePicker()),
+              ),
+            ),
+            ListTile(
+              leading: Switch(
+                value: plasticPeople,
+                onChanged: (bool value) {
+                  setState(() {
+                    plasticPeople = value;
+                  });
+                },
+              ),
+              title: Text('Generate mannequins'),
+            ),
             Expanded(
               flex: 8,
               child: ListView(
